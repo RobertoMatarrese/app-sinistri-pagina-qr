@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Modulo del veicolo B</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Una colonna da telefono, una schermata alla volta come l'app: fondo salvia, riquadri chiari, tasti blu. Colori di Tema.kt. */
+:root {
+  --fondo: #D3E3CB; --riquadro: #FFFFFF; --riquadro2: #EDF4E8; --testo: #14181F; --testo2: #3D4552;
+  --blu: #163E73; --su-blu: #FFFFFF; --bordo: #5C6675; --errore: #861114; --ambra: #F29100; --ambra-testo: #5C3700;
+  --griglia: #C9D6C2; --mezzo-a: #163E73; --mezzo-b: #9A4A00;
+  --carattere: "Atkinson Hyperlegible", "Segoe UI", Roboto, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --fondo: #121713; --riquadro: #0F1216; --riquadro2: #26302A; --testo: #F2F4F7; --testo2: #C9D0DA;
+  --blu: #A9C8F5; --su-blu: #0B1F3A; --bordo: #8D97A6; --errore: #FF8A80; --ambra: #FFC24D; --ambra-testo: #FFC24D;
+  --griglia: #2E3A31; --mezzo-a: #A9C8F5; --mezzo-b: #FFB870; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --fondo: #121713; --riquadro: #0F1216; --riquadro2: #26302A; --testo: #F2F4F7; --testo2: #C9D0DA;
+  --blu: #A9C8F5; --su-blu: #0B1F3A; --bordo: #8D97A6; --errore: #FF8A80; --ambra: #FFC24D; --ambra-testo: #FFC24D;
+  --griglia: #2E3A31; --mezzo-a: #A9C8F5; --mezzo-b: #FFB870; color-scheme: dark }
+body { background: var(--fondo); color: var(--testo); font-family: var(--carattere); font-size: 17px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 12px 32px; }
+main { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+.fascia { background: var(--riquadro); border: 2px solid var(--ambra); border-radius: 10px; padding: 8px 12px; font-weight: 700; color: var(--ambra-testo); }
+.sopra { font-size: 14px; color: var(--testo2); letter-spacing: .02em; }
+h1 { font-size: 26px; line-height: 1.2; margin: 0; text-wrap: balance; }
+h2 { font-size: 20px; margin: 6px 0 0; text-wrap: balance; }
+h3 { font-size: 17px; margin: 8px 0 0; }
+p { margin: 0; }
+.riquadro { background: var(--riquadro); border: 1px solid var(--bordo); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.guida { color: var(--testo2); font-size: 15px; }
+.riga { display: grid; grid-template-columns: 9.5em 1fr; gap: 4px 10px; }
+.riga dt { color: var(--testo2); }
+.riga dd { margin: 0; font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
+dl { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+ol.circ { margin: 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+ol.circ li { display: flex; gap: 8px; }
+ol.circ b { min-width: 2em; }
+svg.disegno { width: 100%; max-width: 100%; aspect-ratio: 1; background: var(--riquadro); border: 1px solid var(--bordo); border-radius: 10px; display: block; }
+.campo { display: flex; flex-direction: column; gap: 4px; }
+.campo label { font-weight: 700; }
+input[type=text], input[type=tel], input[type=email], input[type=date], textarea {
+  font: inherit; color: var(--testo); background: var(--riquadro); border: 1.5px solid var(--bordo); border-radius: 8px; padding: 10px 12px; width: 100%; box-sizing: border-box; min-height: 48px; }
+input:disabled, textarea:disabled { background: var(--riquadro2); color: var(--testo2); }
+.campo.rosso input, .campo.rosso textarea { border-color: var(--errore); border-width: 2px; }
+.msg { color: var(--errore); font-size: 15px; }
+.spunta { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; }
+.spunta input { width: 24px; height: 24px; accent-color: var(--blu); flex: none; }
+.sino { display: flex; gap: 10px; flex-wrap: wrap; }
+.tasti { display: flex; gap: 10px; flex-wrap: wrap; }
+button { font: inherit; font-weight: 700; border-radius: 12px; min-height: 52px; padding: 10px 18px; cursor: pointer; border: 2px solid var(--blu); }
+button.pieno { background: var(--blu); color: var(--su-blu); flex: 1 1 10em; }
+button.chiaro { background: var(--riquadro); color: var(--blu); flex: 1 1 10em; }
+button.scelta { background: var(--riquadro); color: var(--testo); border-color: var(--bordo); min-width: 4.5em; }
+button.scelta[aria-pressed="true"] { background: var(--blu); color: var(--su-blu); border-color: var(--blu); }
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid var(--ambra); outline-offset: 2px; }
+.avviso { color: var(--errore); font-weight: 700; }
+.codice { font-family: ui-monospace, "Cascadia Mono", monospace; font-size: 13px; overflow-wrap: anywhere; background: var(--riquadro2); border-radius: 8px; padding: 10px; user-select: all; }
+.esempio { border: 2px dashed var(--ambra); border-radius: 10px; padding: 8px 12px; color: var(--ambra-testo); font-weight: 700; }
+</style>
+
+</head>
+<body>
+<main>
+  <p class="fascia" id="fascia">Prova: niente viene mandato.</p>
+  <div id="schermo"></div>
+</main>
+
+<script>
+"use strict";
+// Pagina per chi inquadra il QR (veicolo B). La dinamica arriva nella parte del link dopo "#": compressa (deflate) e
+// scritta in base32 minuscolo, perché qui passano solo lettere, cifre e trattini. Niente esce dalla pagina: alla fine i
+// dati diventano un codice, che per ora si porta nell'app a mano (lavoro qr-pagina-prova, 10/11/2026).
+const COMPAGNIE = ["ACCREDITED INSURANCE (EUROPE) LTD", "ADMIRAL EUROPE, COMPANIA DE SEGUROS, S.A.", "ADRIATIC OSIGURANJE D.D.", "AIG EUROPE S.A.", "AIOI NISSAY DOWA INSURANCE COMPANY OF EUROPE SE", "ALLIANZ DIRECT SOCIETA PER AZIONI", "ALLIANZ DIRECT VERSICHERUNGS-AG", "ALLIANZ SOCIETA' PER AZIONI", "ARCA ASSICURAZIONI S.P.A.", "ASSICURATRICE MILANESE SPA - COMPAGNIA DI ASSICURAZIONI", "ASSICURAZIONI GENERALI SOCIETA' PER AZIONI", "ASSIMOCO S.P.A. COMPAGNIA DI ASSICURAZIONI E RIASSICURAZIONI - MOVIMENTO COOPERATIVO", "AXA ASSICURAZIONI S.P.A.", "AXA MPS ASSICURAZIONI DANNI SOCIETA' PER AZIONI", "AXERIA IARD S.A.", "BCC ASSICURAZIONI S.P.A.", "BENE ASSICURAZIONI S.P.A. SOCIETA BENEFIT", "CHUBB EUROPEAN GROUP SE", "COMPAGNIA ASSICURATRICE LINEAR S.P.A.", "COMPAGNIA ITALIANA DI PREVIDENZA, ASSICURAZIONI E RIASSICURAZIONI S.P.A.", "CREDIT AGRICOLE ASSICURAZIONI S.P.A.", "DARAG DEUTSCHLAND AG", "EURO INSURANCES DAC", "EUROHERC OSIGURANJE D.D.", "GENERALI ITALIA S.P.A.", "GENERTEL S.P.A.", "GREAT LAKES INSURANCE SE", "GREENVAL INSURANCE DAC", "GROUPAMA ASSICURAZIONI SOCIETA' PER AZIONI", "HDI ASSICURAZIONI S.P.A.", "HDI GLOBAL SE", "HDI GLOBAL SPECIALTY SE", "HELVETIA COMPAGNIA SVIZZERA D'ASSICURAZIONI S.A.", "HELVETIA GLOBAL SOLUTIONS LTD", "HELVETIA ITALIA ASSICURAZIONI S.P.A.", "INTESA SANPAOLO PROTEZIONE S.P.A.", "ITAS - ISTITUTO TRENTINO-ALTO ADIGE PER ASSICURAZIONI SOCIETA' MUTUA DI ASSICURAZIONI", "LE ASSICURAZIONI DI ROMA - MUTUA ASSICURATRICE ROMANA", "LLOYD'S INSURANCE COMPANY SA", "MATINIUM ASSURANCES", "MMA IARD ASSURANCES MUTUELLES", "MMA IARD SA", "NOBIS COMPAGNIA DI ASSICURAZIONI S.P.A.", "PIUVERA ASSICURAZIONI S.P.A.", "PROBUS INSURANCE COMPANY EUROPE DAC", "QUIXA ASSICURAZIONI S.P.A.", "SARA ASSICURAZIONI S.P.A. ASSICURATRICE UFFICIALE DELL'AUTOMOBILE CLUB D'ITALIA", "SOCIETA' REALE MUTUA DI ASSICURAZIONI", "SOGESSUR S.A.", "UNICREDIT ALLIANZ ASSICURAZIONI S.P.A.", "UNIPOL ASSICURAZIONI S.P.A.", "USAA EU DESIGNATED AC", "VERTI ASSICURAZIONI S.P.A.", "VHV ITALIA ASSICURAZIONI S.P.A.", "VITTORIA ASSICURAZIONI S.P.A.", "WAKAM", "ZAVAROVALNICA TRIGLAV D.D.", "ZURICH INSURANCE EUROPE AG"];
+const CIRCOSTANZE = ["in fermata / in sosta", "ripartiva dopo una sosta / apriva una portiera", "stava parcheggiando",
+  "usciva da un parcheggio, da un luogo privato, da una strada vicinale", "entrava in un parcheggio, in un luogo privato, in una strada vicinale",
+  "si immetteva in una piazza a senso rotatorio", "circolava su una piazza a senso rotatorio", "tamponava procedendo nello stesso senso e nella stessa fila",
+  "procedeva nello stesso senso, ma in una fila diversa", "cambiava fila", "sorpassava", "girava a destra", "girava a sinistra", "retrocedeva",
+  "invadeva la sede stradale riservata alla circolazione in senso inverso", "proveniva da destra",
+  "non aveva osservato il segnale di precedenza o di semaforo rosso"];
+const VOCE1 = { FERMATA: "in fermata", SOSTA: "in sosta" }, VOCE2 = { RIPARTIVA: "ripartiva dopo una sosta", PORTIERA: "apriva una portiera" };
+const PUNTI = { ANT_SX: "anteriore sinistra", ANT_CENTRO: "anteriore centro", ANT_DX: "anteriore destra", LATO_SX: "lato sinistro", LATO_DX: "lato destro",
+  POST_SX: "posteriore sinistra", POST_CENTRO: "posteriore centro", POST_DX: "posteriore destra", FIANCATA_SX_ANT: "fiancata sinistra anteriore",
+  FIANCATA_SX_CENTRO: "fiancata sinistra centrale", FIANCATA_SX_POST: "fiancata sinistra posteriore", FIANCATA_DX_ANT: "fiancata destra anteriore",
+  FIANCATA_DX_CENTRO: "fiancata destra centrale", FIANCATA_DX_POST: "fiancata destra posteriore", TETTO: "tetto", ANTERIORE: "anteriore",
+  POSTERIORE: "posteriore", LATO_SX_ANT: "lato sinistro anteriore", LATO_SX_CENTRO: "lato sinistro centrale", LATO_SX_POST: "lato sinistro posteriore",
+  LATO_DX_ANT: "lato destro anteriore", LATO_DX_CENTRO: "lato destro centrale", LATO_DX_POST: "lato destro posteriore" };
+const FORME = { AUTO: "auto", FURGONE: "furgone", MOTO: "moto", MONOPATTINO: "monopattino" };
+const LUNGHEZZA = { AUTO: .17, FURGONE: .21, MOTO: .13, MONOPATTINO: .12, FRECCIA: .14 };
+const ALFABETO = "abcdefghijklmnopqrstuvwxyz234567";
+const ITALIA = "Italia";
+const S = { DITTA: "Ditta o società", SENZA_CF: "Senza codice fiscale (straniero)", SENZA_CIVICO: "Senza numero civico",
+  NON_ASS: "Non assicurato", NO_CV: "Nessuna carta verde", NO_AG: "Nessuna agenzia", NO_PAT: "Senza patente", NO_OSS: "Nessuna osservazione" };
+
+// Dinamica d'esempio, quando la pagina si apre senza QR.
+const ESEMPIO = { v: 1, id: "esempio", d: "2026-11-10T08:40", l: "Via Roma 12, Bracciano (RM)",
+  A: { m: "Fiat Panda", t: "AB123CD", f: "AUTO", u: "POST_CENTRO", n: ["POST_CENTRO", "POST_SX"], c: [1], v1: "FERMATA" },
+  B: { f: "AUTO", u: "ANT_CENTRO", n: ["ANT_CENTRO"], c: [8] },
+  g: { s: "Q", e: [["AUTO", "A", .5, .38, 0, 1], ["AUTO", "B", .5, .62, 0, 1]], t: [["Via Roma", .2, .5, 270, 1]], r: [[.35, .05, .35, .95], [.65, .05, .65, .95]] } };
+
+function base32(bytes) {
+  let bit = 0, val = 0, out = "";
+  for (const b of bytes) { val = (val << 8) | b; bit += 8; while (bit >= 5) { out += ALFABETO[(val >>> (bit - 5)) & 31]; bit -= 5; } }
+  if (bit > 0) out += ALFABETO[(val << (5 - bit)) & 31];
+  return out;
+}
+function daBase32(s) {
+  let bit = 0, val = 0; const out = [];
+  for (const ch of s) { const i = ALFABETO.indexOf(ch); if (i < 0) throw new Error("lettera"); val = (val << 5) | i; bit += 5;
+    if (bit >= 8) { out.push((val >>> (bit - 8)) & 255); bit -= 8; } }
+  return new Uint8Array(out);
+}
+async function attraverso(bytes, flusso) {
+  const r = new Response(new Blob([bytes]).stream().pipeThrough(flusso));
+  return new Uint8Array(await r.arrayBuffer());
+}
+async function leggiQr(h) {
+  const testo = new TextDecoder().decode(await attraverso(daBase32(h), new DecompressionStream("deflate")));
+  return JSON.parse(testo);
+}
+async function codiceDi(obj) {
+  return base32(await attraverso(new TextEncoder().encode(JSON.stringify(obj)), new CompressionStream("deflate")));
+}
+
+// Stato della pagina
+let dinamica = null, esempio = false, schermata = "dinamica", errori = false;
+const d = {
+  accordo: null,
+  c6: { cognome: "", nome: "", cfPiva: "", comune: "", provincia: "", via: "", civico: "", cap: "", stato: ITALIA, telefono: "", email: "" },
+  c7: { marcaTipo: "", targaTelaio: "", statoImm: ITALIA, rimorchio: null },
+  c8: { denominazione: "", polizza: "", cartaVerde: S.NO_CV, dal: "", al: "", agenzia: { denominazione: "", indirizzo: "", stato: ITALIA, telEmail: "" }, danniPropri: null },
+  c9: { stessaPersona6: false, cognome: "", nome: "", nascita: "", cf: "", comune: "", provincia: "", via: "", civico: "", stato: ITALIA, telefono: "", email: "", patente: "", categoria: "", validaFino: "" },
+  o: "", f: "",
+};
+const ORDINE = ["dinamica", "c6", "c7", "c8", "c9", "c14", "c15", "fine"];
+
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const vuoto = s => !s || !String(s).trim() || String(s).trim() === "-";
+const oggi = () => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); };
+const data = s => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || ""); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; };
+const giorno = s => { const x = data(s); return x ? x.toLocaleDateString("it-IT") : ""; };
+
+// Campi mancanti, con le regole dell'app (Passi.kt). Chiavi uguali ai nomi dei campi.
+function mancanti(qui) {
+  const m = new Set(), c6 = d.c6, c7 = d.c7, c8 = d.c8, c9 = d.c9;
+  const req = (k, v) => { if (vuoto(v)) m.add(k); };
+  const indirizzo = (p, o) => { req(p + "comune", o.comune); if (o.stato.trim().toLowerCase() === "italia") req(p + "provincia", o.provincia); req(p + "via", o.via); req(p + "civico", o.civico); };
+  if (qui === "dinamica" && d.accordo === null) m.add("accordo");
+  if (qui === "c6") { req("cognome", c6.cognome); req("nome", c6.nome); req("cfPiva", c6.cfPiva); indirizzo("", c6); req("cap", c6.cap); req("stato", c6.stato);
+    if (vuoto(c6.telefono) && vuoto(c6.email)) m.add("contatto"); }
+  if (qui === "c7") { req("marcaTipo", c7.marcaTipo); req("targaTelaio", c7.targaTelaio); req("statoImm", c7.statoImm);
+    if (c7.rimorchio) { req("rimTarga", c7.rimorchio.targaTelaio); req("rimStato", c7.rimorchio.statoImm); } }
+  if (qui === "c8" && c8.denominazione !== S.NON_ASS) {
+    ["denominazione", "polizza", "cartaVerde", "dal", "al"].forEach(k => req(k, c8[k]));
+    req("agDenominazione", c8.agenzia.denominazione);
+    if (c8.agenzia.denominazione !== S.NO_AG) { req("agIndirizzo", c8.agenzia.indirizzo); req("agStato", c8.agenzia.stato); req("agTelEmail", c8.agenzia.telEmail); }
+    if (c8.danniPropri === null) m.add("danniPropri");
+    const a = data(c8.dal), b = data(c8.al); if (a && b && b < a) m.add("al-prima");
+  }
+  if (qui === "c9") {
+    if (!c9.stessaPersona6) { req("cognome", c9.cognome); req("nome", c9.nome); req("cf", c9.cf); indirizzo("", c9); req("stato", c9.stato);
+      if (vuoto(c9.telefono) && vuoto(c9.email)) m.add("contatto"); }
+    req("nascita", c9.nascita);
+    const n = data(c9.nascita), limite = new Date(oggi()); limite.setFullYear(limite.getFullYear() - 120);
+    if (n && (n > oggi() || n < limite)) m.add("nascita-fuori");
+    req("patente", c9.patente);
+    if (c9.patente !== S.NO_PAT) { req("categoria", c9.categoria); req("validaFino", c9.validaFino); }
+  }
+  if (qui === "c14") req("osservazioni", d.o);
+  return m;
+}
+
+// Pezzi dello schermo
+function campo(id, etichetta, valore, { tipo = "text", err, spunta, messaggio, guida, lista, maiuscolo, righe } = {}) {
+  const spuntata = spunta && valore === spunta.testo;
+  const input = righe
+    ? `<textarea id="${id}" rows="${righe}" ${spuntata ? "disabled" : ""}>${spuntata ? "" : esc(valore)}</textarea>`
+    : `<input id="${id}" type="${tipo}" value="${spuntata ? "" : esc(valore)}" ${spuntata ? "disabled" : ""} ${lista ? `list="${lista}"` : ""}
+        ${maiuscolo ? 'autocapitalize="characters"' : ""} autocomplete="off" spellcheck="false">`;
+  return `<div class="campo ${err ? "rosso" : ""}"><label for="${id}">${esc(etichetta)}</label>${input}
+    ${guida ? `<p class="guida">${esc(guida)}</p>` : ""}
+    ${err ? `<p class="msg">${esc(messaggio || (spunta ? "Obbligatorio, oppure spunta la casella sotto." : "Obbligatorio"))}</p>` : ""}
+    ${spunta ? `<label class="spunta"><input type="checkbox" id="${id}-spunta" ${spuntata ? "checked" : ""}> ${esc(spunta.testo)}</label>` : ""}</div>`;
+}
+function sino(id, domanda, valore, err) {
+  return `<div class="campo ${err ? "rosso" : ""}"><p><b>${esc(domanda)}</b></p><div class="sino">
+    <button type="button" class="scelta" id="${id}-no" aria-pressed="${valore === false}">NO</button>
+    <button type="button" class="scelta" id="${id}-si" aria-pressed="${valore === true}">SÌ</button></div>
+    ${err ? `<p class="msg">Rispondi alla domanda.</p>` : ""}</div>`;
+}
+
+function disegno(g) {
+  const L = 1000, parti = [];
+  for (let i = 50; i < L; i += 50) parti.push(`<line x1="${i}" y1="0" x2="${i}" y2="${L}" stroke="var(--griglia)" stroke-width="2"/><line x1="0" y1="${i}" x2="${L}" y2="${i}" stroke="var(--griglia)" stroke-width="2"/>`);
+  for (const r of g.r || []) { const pt = []; for (let i = 0; i + 1 < r.length; i += 2) pt.push(`${r[i] * L},${r[i + 1] * L}`);
+    parti.push(`<polyline points="${pt.join(" ")}" fill="none" stroke="var(--testo)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>`); }
+  for (const [testo, x, y, gradi, scala] of g.t || [])
+    parti.push(`<text x="0" y="0" transform="translate(${x * L} ${y * L}) rotate(${gradi || 0})" font-size="${50 * (scala || 1)}" text-anchor="middle" dominant-baseline="middle" fill="var(--testo2)" font-family="var(--carattere)">${esc(testo)}</text>`);
+  for (const [icona, lettera, x, y, gradi, scala] of g.e || []) {
+    const lung = (LUNGHEZZA[icona] || .17) * L * (scala || 1), colore = lettera === "A" ? "var(--mezzo-a)" : "var(--mezzo-b)";
+    let forma;
+    if (icona === "FRECCIA") forma = `<path d="M0 ${-lung / 2} L${lung * .2} ${-lung * .18} L${lung * .07} ${-lung * .18} L${lung * .07} ${lung / 2} L${-lung * .07} ${lung / 2} L${-lung * .07} ${-lung * .18} L${-lung * .2} ${-lung * .18} Z" fill="var(--testo)"/>`;
+    else { const larg = lung * (icona === "MOTO" || icona === "MONOPATTINO" ? .32 : .5);
+      forma = `<rect x="${-larg / 2}" y="${-lung / 2}" width="${larg}" height="${lung}" rx="${larg * .25}" fill="${colore}"/>
+        <path d="M${-larg * .32} ${-lung * .22} L${larg * .32} ${-lung * .22} L${larg * .24} ${-lung * .36} L${-larg * .24} ${-lung * .36} Z" fill="var(--riquadro)"/>`; }
+    const etichetta = lettera ? `<g transform="rotate(${-(gradi || 0)})"><circle r="${L * .036}" fill="var(--riquadro)" stroke="${colore}" stroke-width="6"/><text font-size="${L * .045}" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="${colore}" font-family="var(--carattere)">${esc(lettera)}</text></g>` : "";
+    parti.push(`<g transform="translate(${x * L} ${y * L}) rotate(${gradi || 0})">${forma}${etichetta}</g>`);
+  }
+  return `<svg class="disegno" viewBox="0 0 ${L} ${L}" role="img" aria-label="Disegno dell'incidente con i veicoli">${parti.join("")}</svg>`;
+}
+
+function circostanze(v) {
+  const c = (v.c || []).slice().sort((a, b) => a - b);
+  if (!c.length) return `<p>Nessuna casella barrata.</p>`;
+  return `<ol class="circ">${c.map(n => { let t = CIRCOSTANZE[n - 1];
+    if (n === 1 && v.v1) t = VOCE1[v.v1] || t; if (n === 2 && v.v2) t = VOCE2[v.v2] || t;
+    return `<li><b>${n})</b><span>${esc(t)}</span></li>`; }).join("")}</ol><p class="guida">Numero di caselle barrate con una croce: ${c.length}</p>`;
+}
+function veicolo(lettera, v, conDati) {
+  const righe = [];
+  if (conDati && v.m) righe.push(["Marca, Tipo", v.m]);
+  if (conDati && v.t) righe.push(["N. di targa", v.t]);
+  if (v.f) righe.push(["Veicolo", FORME[v.f] || v.f]);
+  righe.push(["Punto d'urto", PUNTI[v.u] || "non segnato"]);
+  righe.push(["Danni visibili", v.nd ? "Nessun danno visibile" : (v.n || []).map(p => PUNTI[p] || p).join(", ") || "non segnati"]);
+  return `<section class="riquadro"><h3>Veicolo ${lettera}</h3><dl>${righe.map(([a, b]) => `<div class="riga"><dt>${esc(a)}</dt><dd>${esc(b)}</dd></div>`).join("")}</dl>
+    <h3>12. Circostanze dell'incidente</h3>${circostanze(v)}</section>`;
+}
+
+function vista() {
+  const q = dinamica, m = errori ? mancanti(schermata) : new Set(), e = k => m.has(k);
+  const c6 = d.c6, c7 = d.c7, c8 = d.c8, c9 = d.c9;
+  const testa = (sopra, titolo) => `<p class="sopra">${esc(sopra)}</p><h1>${esc(titolo)}</h1>`;
+  const avviso = m.size ? `<p class="avviso">Compila i campi in rosso, oppure spunta la casella sotto il campo.</p>` : "";
+  const tastiAvanti = (testo = "Avanti") => `<div class="tasti"><button type="button" class="chiaro" id="indietro">Indietro</button><button type="button" class="pieno" id="avanti">${testo}</button></div>`;
+  let h = "";
+  if (schermata === "dinamica") {
+    const [g, ora] = (q.d || "").split("T");
+    h = testa("Veicolo B", "Com'è andata, secondo il telefono di A") +
+      (esempio ? `<p class="esempio">Esempio: questa pagina si è aperta senza il QR. Inquadra il QR sul telefono di A per vedere il vostro incidente.</p>` : "") +
+      `<p>Leggi e guarda il disegno. Poi dì se sei d'accordo. Dopo scrivi i tuoi dati.</p>
+      <section class="riquadro"><dl>
+        <div class="riga"><dt>1. Data incidente</dt><dd>${esc(giorno(g))}${ora ? ", ore " + esc(ora) : ""}</dd></div>
+        <div class="riga"><dt>2. Luogo</dt><dd>${esc(q.l || "non scritto")}</dd></div></dl></section>` +
+      veicolo("A", q.A || {}, true) + veicolo("B", q.B || {}, false) +
+      `<section class="riquadro"><h3>13. Grafico dell'incidente al momento dell'urto</h3>${disegno(q.g || {})}
+        ${q.g && q.g.s === "M" ? `<p class="guida">Sul telefono di A il disegno è sopra la mappa. Qui i veicoli sono su un foglio a quadretti.</p>` : ""}</section>
+      <section class="riquadro"><h2>Sei d'accordo con quello che hai letto?</h2>
+        <div class="sino"><button type="button" class="scelta" id="accordo-no" aria-pressed="${d.accordo === false}">Non sono d'accordo</button>
+        <button type="button" class="scelta" id="accordo-si" aria-pressed="${d.accordo === true}">Sono d'accordo</button></div>
+        ${d.accordo === false ? `<p class="guida">Puoi scrivere comunque i tuoi dati, e la tua versione nella casella 14. Il conducente A vedrà che non sei d'accordo e non firmerai il modulo.</p>` : ""}
+        ${e("accordo") ? `<p class="msg">Scegli una risposta.</p>` : ""}</section>
+      <div class="tasti"><button type="button" class="pieno" id="avanti">Scrivi i tuoi dati</button></div>`;
+  } else if (schermata === "c6") {
+    h = testa("Veicolo B, 1 di 6", "6. Contraente/Assicurato (vedere certificato d'assicurazione)") + avviso +
+      `<section class="riquadro"><p class="guida">La persona o la ditta che ha fatto l'assicurazione del veicolo. Può essere diversa da chi guidava. È sul certificato di assicurazione.</p>` +
+      campo("cognome", "Cognome", c6.cognome, { err: e("cognome") }) +
+      campo("nome", "Nome", c6.nome, { err: e("nome"), spunta: { testo: S.DITTA } }) +
+      campo("cfPiva", "Codice Fiscale / Partita IVA", c6.cfPiva, { err: e("cfPiva"), spunta: { testo: S.SENZA_CF }, maiuscolo: true, guida: "Sulla tessera sanitaria. Per una ditta, la partita IVA." }) +
+      `<h3>Indirizzo (comune, provincia, via e numero)</h3>` +
+      campo("comune", "Comune", c6.comune, { err: e("comune") }) + campo("provincia", "Provincia", c6.provincia, { err: e("provincia"), maiuscolo: true }) +
+      campo("via", "Via", c6.via, { err: e("via") }) + campo("civico", "N. civico", c6.civico, { err: e("civico"), spunta: { testo: S.SENZA_CIVICO } }) +
+      campo("cap", "C.A.P.", c6.cap, { err: e("cap"), tipo: "tel" }) + campo("stato", "Stato", c6.stato, { err: e("stato") }) +
+      campo("telefono", "Telefono", c6.telefono, { tipo: "tel", err: e("contatto"), messaggio: " " }) +
+      campo("email", "E-mail", c6.email, { tipo: "email", err: e("contatto"), messaggio: "Serve almeno un telefono o un'email." }) +
+      `<p class="guida">Basta il telefono o l'email.</p></section>` + tastiAvanti();
+  } else if (schermata === "c7") {
+    h = testa("Veicolo B, 2 di 6", "7. Veicolo") + avviso + `<section class="riquadro">` +
+      campo("marcaTipo", "Marca, Tipo", c7.marcaTipo, { err: e("marcaTipo"), guida: "Sulla carta di circolazione, voci D.1 e D.3." }) +
+      `<h3>A motore</h3>` + campo("targaTelaio", "N. di targa o telaio", c7.targaTelaio, { err: e("targaTelaio"), maiuscolo: true, guida: "Sulla carta di circolazione: targa alla voce A, telaio alla voce E." }) +
+      campo("statoImm", "Stato d'immatricolazione", c7.statoImm, { err: e("statoImm") }) +
+      `<h3>Rimorchio</h3><label class="spunta"><input type="checkbox" id="rimorchio" ${c7.rimorchio ? "checked" : ""}> Il veicolo traina un rimorchio</label>` +
+      (c7.rimorchio ? campo("rimTarga", "N. di targa o telaio", c7.rimorchio.targaTelaio, { err: e("rimTarga"), maiuscolo: true }) +
+        campo("rimStato", "Stato d'immatricolazione", c7.rimorchio.statoImm, { err: e("rimStato") }) : "") + `</section>` + tastiAvanti();
+  } else if (schermata === "c8") {
+    const nonAss = c8.denominazione === S.NON_ASS, ag = c8.agenzia;
+    h = testa("Veicolo B, 3 di 6", "8. Compagnia d'assicurazione (vedere certificato d'assicurazione)") + avviso + `<section class="riquadro">` +
+      `<datalist id="compagnie">${COMPAGNIE.map(n => `<option value="${esc(n)}">`).join("")}</datalist>` +
+      campo("denominazione", "Denominazione", nonAss ? "" : c8.denominazione, { err: e("denominazione"), lista: "compagnie" }) +
+      `<label class="spunta"><input type="checkbox" id="nonAss" ${nonAss ? "checked" : ""}> ${S.NON_ASS}</label>` +
+      (nonAss ? "" :
+        campo("polizza", "N. di polizza", c8.polizza, { err: e("polizza"), maiuscolo: true, guida: "Sul certificato di assicurazione." }) +
+        campo("cartaVerde", "N. di Carta Verde", c8.cartaVerde, { err: e("cartaVerde"), maiuscolo: true, spunta: { testo: S.NO_CV } }) +
+        `<h3>Certificato di assicurazione o Carta Verde</h3>` +
+        campo("dal", "Valido dal", c8.dal, { tipo: "date", err: e("dal") }) +
+        campo("al", "Al", c8.al, { tipo: "date", err: e("al") || e("al-prima"), messaggio: e("al-prima") ? "\"Al\" viene prima di \"Valido dal\": controlla le date." : "" }) +
+        `<p class="guida">Le date di inizio e fine, sul certificato di assicurazione.</p>` +
+        `<h3>Agenzia (o ufficio o intermediario)</h3>` +
+        campo("agDenominazione", "Denominazione", ag.denominazione, { err: e("agDenominazione"), spunta: { testo: S.NO_AG } }) +
+        (ag.denominazione === S.NO_AG ? "" : campo("agIndirizzo", "Indirizzo", ag.indirizzo, { err: e("agIndirizzo") }) +
+          campo("agStato", "Stato", ag.stato, { err: e("agStato") }) + campo("agTelEmail", "N. Tel. o E-mail", ag.telEmail, { err: e("agTelEmail") })) +
+        sino("danniPropri", "La polizza copre anche i danni materiali al proprio veicolo", c8.danniPropri, e("danniPropri")) +
+        `<p class="guida">È scritto nel contratto di assicurazione.</p>`) + `</section>` + tastiAvanti();
+  } else if (schermata === "c9") {
+    const noPat = c9.patente === S.NO_PAT, cat = c9.categoria.split(",").map(x => x.trim()).filter(Boolean);
+    h = testa("Veicolo B, 4 di 6", "9. Conducente (vedere patente di guida)") + avviso + `<section class="riquadro">` +
+      (c6.nome !== S.DITTA ? `<label class="spunta"><input type="checkbox" id="stessa" ${c9.stessaPersona6 ? "checked" : ""}> Stessa persona della casella 6</label>` : "") +
+      (c9.stessaPersona6 ? `<p>${esc([c6.cognome, c6.nome].join(" "))}, ${esc(c6.cfPiva)}</p>` :
+        campo("cognome", "Cognome", c9.cognome, { err: e("cognome") }) + campo("nome", "Nome", c9.nome, { err: e("nome") })) +
+      campo("nascita", "Data di nascita", c9.nascita, { tipo: "date", err: e("nascita") || e("nascita-fuori"), messaggio: e("nascita-fuori") ? "Questa data di nascita non è possibile: controllala." : "" }) +
+      (c9.stessaPersona6 ? "" :
+        campo("cf", "Codice Fiscale", c9.cf, { err: e("cf"), maiuscolo: true, spunta: { testo: S.SENZA_CF } }) +
+        `<h3>Indirizzo (comune, provincia, via e numero)</h3>` +
+        campo("comune", "Comune", c9.comune, { err: e("comune") }) + campo("provincia", "Provincia", c9.provincia, { err: e("provincia"), maiuscolo: true }) +
+        campo("via", "Via", c9.via, { err: e("via") }) + campo("civico", "N. civico", c9.civico, { err: e("civico"), spunta: { testo: S.SENZA_CIVICO } }) +
+        campo("stato", "Stato", c9.stato, { err: e("stato") }) +
+        campo("telefono", "Telefono", c9.telefono, { tipo: "tel", err: e("contatto"), messaggio: " " }) +
+        campo("email", "E-mail", c9.email, { tipo: "email", err: e("contatto"), messaggio: "Serve almeno un telefono o un'email." }) +
+        `<p class="guida">Basta il telefono o l'email.</p>`) +
+      campo("patente", "Patente N.", c9.patente, { err: e("patente"), maiuscolo: true, spunta: { testo: S.NO_PAT }, guida: noPat ? "" : "Sulla patente, al punto 5." }) +
+      (noPat ? "" :
+        `<div class="campo ${e("categoria") ? "rosso" : ""}"><p><b>Categ. (A, B, ...)</b></p><div class="sino">${["AM", "A", "B", "C", "D"].map(k =>
+          `<button type="button" class="scelta" data-cat="${k}" aria-pressed="${cat.includes(k)}">${k}</button>`).join("")}</div>
+          ${e("categoria") ? `<p class="msg">Tocca una categoria.</p>` : ""}<p class="guida">Sulla patente, al punto 9.</p></div>` +
+        campo("validaFino", "Valida fino al", c9.validaFino, { tipo: "date", err: e("validaFino"), guida: "Sulla patente, al punto 4b." })) +
+      `</section>` + tastiAvanti();
+  } else if (schermata === "c14") {
+    h = testa("Veicolo B, 5 di 6", "14. Osservazioni") + avviso + `<section class="riquadro">` +
+      (d.accordo === false ? `<p class="guida">Non sei d'accordo con la dinamica: scrivi qui come è andata secondo te.</p>` : "") +
+      campo("osservazioni", "Osservazioni", d.o, { err: e("osservazioni"), spunta: { testo: S.NO_OSS }, righe: 5 }) + `</section>` + tastiAvanti();
+  } else if (schermata === "c15") {
+    h = testa("Veicolo B, 6 di 6", "15. Firma dei conducenti") + `<section class="riquadro">` +
+      (d.accordo === false ? `<p>Non sei d'accordo con la dinamica: il modulo non avrà la tua firma.</p>` :
+        `<p class="guida">Per ora la firma è il tuo nome scritto. Facoltativo.</p>` + campo("firma", "Nome e cognome del conducente B", d.f, {})) +
+      `</section>` + tastiAvanti("Ho finito");
+  } else {
+    h = testa("Veicolo B", "Dati pronti") +
+      `<section class="riquadro"><p><b>Questi dati arriverebbero sul telefono di A. Per ora non partono.</b></p>
+        <p>${d.accordo ? "Sei d'accordo con la dinamica." : "Non sei d'accordo con la dinamica."}</p>
+        <dl><div class="riga"><dt>6. Contraente</dt><dd>${esc([c6.cognome, c6.nome === S.DITTA ? "" : c6.nome].join(" ").trim())}</dd></div>
+        <div class="riga"><dt>7. Veicolo</dt><dd>${esc(c7.marcaTipo)}, ${esc(c7.targaTelaio)}</dd></div>
+        <div class="riga"><dt>8. Compagnia</dt><dd>${esc(c8.denominazione)}</dd></div>
+        <div class="riga"><dt>9. Conducente</dt><dd>${esc(c9.stessaPersona6 ? [c6.cognome, c6.nome].join(" ") : [c9.cognome, c9.nome].join(" "))}</dd></div></dl></section>
+      <section class="riquadro"><h3>Codice dei dati</h3><p class="guida">Solo per la prova: è il pacchetto che il server porterebbe al telefono di A.</p>
+        <p class="codice" id="codice">…</p><div class="tasti"><button type="button" class="chiaro" id="copia">Copia il codice</button></div>
+        <p class="guida" id="copiato" hidden>Codice copiato.</p></section>
+      <div class="tasti"><button type="button" class="chiaro" id="indietro">Indietro</button></div>`;
+  }
+  document.getElementById("schermo").innerHTML = `<div style="display:flex;flex-direction:column;gap:14px">${h}</div>`;
+  collega();
+}
+
+// Collega campi e tasti allo stato
+function collega() {
+  const $ = id => document.getElementById(id);
+  const legaCampo = (id, obj, chiave, spunta) => {
+    const el = $(id); if (!el) return;
+    el.addEventListener("input", () => { obj[chiave] = el.value; });
+    const sp = $(id + "-spunta");
+    if (sp && spunta) sp.addEventListener("change", () => { obj[chiave] = sp.checked ? spunta : ""; vista(); });
+  };
+  const sez = { c6: d.c6, c7: d.c7, c9: d.c9 }[schermata];
+  if (schermata === "c6") {
+    legaCampo("cognome", d.c6, "cognome"); legaCampo("nome", d.c6, "nome", S.DITTA); legaCampo("cfPiva", d.c6, "cfPiva", S.SENZA_CF);
+    ["comune", "provincia", "via", "cap", "stato", "telefono", "email"].forEach(k => legaCampo(k, d.c6, k)); legaCampo("civico", d.c6, "civico", S.SENZA_CIVICO);
+  }
+  if (schermata === "c7") {
+    ["marcaTipo", "targaTelaio", "statoImm"].forEach(k => legaCampo(k, d.c7, k));
+    if (d.c7.rimorchio) { legaCampo("rimTarga", d.c7.rimorchio, "targaTelaio"); legaCampo("rimStato", d.c7.rimorchio, "statoImm"); }
+    $("rimorchio").addEventListener("change", ev => { d.c7.rimorchio = ev.target.checked ? { targaTelaio: "", statoImm: ITALIA } : null; vista(); });
+  }
+  if (schermata === "c8") {
+    $("nonAss").addEventListener("change", ev => { d.c8.denominazione = ev.target.checked ? S.NON_ASS : ""; vista(); });
+    legaCampo("denominazione", d.c8, "denominazione");
+    if (d.c8.denominazione !== S.NON_ASS) {
+      legaCampo("polizza", d.c8, "polizza"); legaCampo("cartaVerde", d.c8, "cartaVerde", S.NO_CV); legaCampo("dal", d.c8, "dal"); legaCampo("al", d.c8, "al");
+      legaCampo("agDenominazione", d.c8.agenzia, "denominazione", S.NO_AG);
+      ["Indirizzo", "Stato", "TelEmail"].forEach(k => legaCampo("ag" + k, d.c8.agenzia, k[0].toLowerCase() + k.slice(1)));
+      $("danniPropri-no").addEventListener("click", () => { d.c8.danniPropri = false; vista(); });
+      $("danniPropri-si").addEventListener("click", () => { d.c8.danniPropri = true; vista(); });
+    }
+  }
+  if (schermata === "c9") {
+    const st = $("stessa"); if (st) st.addEventListener("change", () => { d.c9.stessaPersona6 = st.checked; vista(); });
+    ["cognome", "nome", "nascita", "comune", "provincia", "via", "stato", "telefono", "email", "validaFino"].forEach(k => legaCampo(k, d.c9, k));
+    legaCampo("cf", d.c9, "cf", S.SENZA_CF); legaCampo("civico", d.c9, "civico", S.SENZA_CIVICO);
+    legaCampo("patente", d.c9, "patente", S.NO_PAT);
+    document.querySelectorAll("[data-cat]").forEach(b => b.addEventListener("click", () => {
+      const k = b.dataset.cat, s = new Set(d.c9.categoria.split(",").map(x => x.trim()).filter(Boolean));
+      s.has(k) ? s.delete(k) : s.add(k); d.c9.categoria = ["AM", "A", "B", "C", "D"].filter(x => s.has(x)).join(", "); vista(); }));
+  }
+  if (schermata === "c14") legaCampo("osservazioni", d, "o", S.NO_OSS);
+  if (schermata === "c15" && $("firma")) legaCampo("firma", d, "f");
+  if (schermata === "dinamica") {
+    $("accordo-si").addEventListener("click", () => { d.accordo = true; vista(); });
+    $("accordo-no").addEventListener("click", () => { d.accordo = false; vista(); });
+  }
+  const av = $("avanti");
+  if (av) av.addEventListener("click", () => {
+    if (mancanti(schermata).size) { errori = true; vista(); const r = document.querySelector(".rosso, .avviso, .msg"); if (r) r.scrollIntoView({ block: "center" }); return; }
+    errori = false; schermata = ORDINE[ORDINE.indexOf(schermata) + 1]; vista(); window.scrollTo(0, 0);
+    if (schermata === "fine") preparaCodice();
+  });
+  const ind = $("indietro");
+  if (ind) ind.addEventListener("click", () => { errori = false; schermata = ORDINE[ORDINE.indexOf(schermata) - 1]; vista(); window.scrollTo(0, 0); });
+  const cp = $("copia");
+  if (cp) cp.addEventListener("click", () => {
+    const t = $("codice").textContent;
+    const fatto = () => { $("copiato").hidden = false; };
+    try { navigator.clipboard.writeText(t).then(fatto, () => { getSelection().selectAllChildren($("codice")); }); }
+    catch (e) { getSelection().selectAllChildren($("codice")); }
+  });
+}
+
+// Pacchetto per il telefono di A: nomi dei campi come nell'app (Modelli.kt).
+async function preparaCodice() {
+  const c9 = Object.assign({}, d.c9);
+  if (c9.stessaPersona6) Object.assign(c9, { cognome: d.c6.cognome, nome: d.c6.nome, cf: /^\d{11}$/.test(d.c6.cfPiva) ? c9.cf : d.c6.cfPiva,
+    comune: d.c6.comune, provincia: d.c6.provincia, via: d.c6.via, civico: d.c6.civico, stato: d.c6.stato, telefono: d.c6.telefono, email: d.c6.email });
+  const c8 = d.c8.denominazione === S.NON_ASS ? { denominazione: S.NON_ASS } : d.c8;
+  const pacchetto = { v: 1, id: dinamica.id, accordo: d.accordo, c6: d.c6, c7: d.c7, c8, c9, o: d.o, f: d.accordo ? d.f.trim() : "" };
+  const el = document.getElementById("codice");
+  try { el.textContent = await codiceDi(pacchetto); } catch (e) { el.textContent = "Questo browser non sa preparare il codice."; }
+}
+
+async function avvio() {
+  const h = location.hash.replace(/^#/, "");
+  try { if (h) dinamica = await leggiQr(h); } catch (e) { dinamica = null; }
+  if (!dinamica) { dinamica = ESEMPIO; esempio = true; }
+  vista();
+}
+window.addEventListener("hashchange", () => { schermata = "dinamica"; avvio(); });
+avvio();
+</script>
+
+</body>
+</html>

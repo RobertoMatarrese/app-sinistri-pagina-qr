@@ -395,11 +395,14 @@ function collega() {
   const av = $("avanti");
   if (av) av.addEventListener("click", () => {
     if (mancanti(schermata).size) { errori = true; vista(); const r = document.querySelector(".rosso, .avviso, .msg"); if (r) r.scrollIntoView({ block: "center" }); return; }
-    errori = false; schermata = ORDINE[ORDINE.indexOf(schermata) + 1]; vista(); window.scrollTo(0, 0);
-    if (schermata === "fine") preparaCodice();
+    errori = false; vai(ORDINE[ORDINE.indexOf(schermata) + 1]);
+    try { history.pushState({ i: ORDINE.indexOf(schermata) }, ""); } catch (e) { /* senza cronologia resta il tasto della pagina */ }
   });
   const ind = $("indietro");
-  if (ind) ind.addEventListener("click", () => { errori = false; schermata = ORDINE[ORDINE.indexOf(schermata) - 1]; vista(); window.scrollTo(0, 0); });
+  if (ind) ind.addEventListener("click", () => {
+    errori = false;
+    if (history.state && history.state.i === ORDINE.indexOf(schermata)) history.back(); else vai(ORDINE[ORDINE.indexOf(schermata) - 1]);
+  });
   const cp = $("copia");
   if (cp) cp.addEventListener("click", () => {
     const t = $("codice").textContent;
@@ -427,6 +430,26 @@ async function avvio() {
   vista();
 }
 window.addEventListener("hashchange", () => { schermata = "dinamica"; avvio(); });
+
+// Tasto "indietro" del telefono (15/11/2026): prima usciva dalla pagina e al ritorno si ricominciava da capo. Ora ogni
+// passo è una voce della cronologia: "indietro" torna al passo prima, con i dati scritti al loro posto. I dati restano
+// solo nella memoria della pagina: nella cronologia va il numero del passo, e l'indirizzo non cambia.
+function vai(passo) {
+  schermata = passo; vista(); window.scrollTo(0, 0);
+  if (schermata === "fine") preparaCodice();
+}
+let mostraMancanti = false;
+window.addEventListener("popstate", ev => {
+  if (!dinamica) return;
+  const i = Math.min((ev.state && ev.state.i) || 0, ORDINE.length - 1);
+  // Con "avanti" del browser non si passa oltre un passo a cui manca qualcosa: ci si ferma lì, con i campi in rosso.
+  const fermo = ORDINE.slice(0, i).findIndex(s => mancanti(s).size);
+  if (fermo >= 0) { mostraMancanti = fermo > 0; history.go(fermo - i); return; }
+  errori = mostraMancanti; mostraMancanti = false;
+  vai(ORDINE[i]);
+});
+// Pagina ricaricata a metà: i dati non ci sono più, si torna alla voce del primo passo.
+if (history.state && history.state.i > 0) history.go(-history.state.i);
 avvio();
 </script>
 

@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-mnVu0AhuO1C805SiZBLpuyYI767Ay87+TEYg69uFIm4='; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
 <style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Modulo del veicolo B</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -119,9 +120,21 @@ async function attraverso(bytes, flusso) {
   const r = new Response(new Blob([bytes]).stream().pipeThrough(flusso));
   return new Uint8Array(await r.arrayBuffer());
 }
+// Sicurezza (docs/lavori/sicurezza, 16/11/2026): il link può averlo scritto chiunque. Link troppo lungo, testo
+// decompresso oltre MAX_TESTO o dati che non sono un oggetto: si mostra l'esempio, come per un link rotto.
+const MAX_LINK = 8000, MAX_TESTO = 200000;
 async function leggiQr(h) {
-  const testo = new TextDecoder().decode(await attraverso(daBase32(h), new DecompressionStream("deflate")));
-  return JSON.parse(testo);
+  if (h.length > MAX_LINK) throw new Error("lungo");
+  const lettore = new Blob([daBase32(h)]).stream().pipeThrough(new DecompressionStream("deflate")).getReader(), pezzi = [];
+  let n = 0;
+  for (;;) { const { done, value } = await lettore.read(); if (done) break;
+    n += value.length; if (n > MAX_TESTO) { lettore.cancel(); throw new Error("lungo"); } pezzi.push(value); }
+  const tutto = new Uint8Array(n); let i = 0; for (const p of pezzi) { tutto.set(p, i); i += p.length; }
+  const q = JSON.parse(new TextDecoder().decode(tutto));
+  if (!q || typeof q !== "object" || Array.isArray(q)) throw new Error("forma");
+  for (const k of ["A", "B", "g"]) if (q[k] != null && (typeof q[k] !== "object" || Array.isArray(q[k]))) throw new Error("forma");
+  for (const k of ["d", "l", "id"]) if (q[k] != null && typeof q[k] !== "string") throw new Error("forma");
+  return q;
 }
 async function codiceDi(obj) {
   return base32(await attraverso(new TextEncoder().encode(JSON.stringify(obj)), new CompressionStream("deflate")));
@@ -140,6 +153,10 @@ const d = {
 const ORDINE = ["dinamica", "c6", "c7", "c8", "c9", "c14", "c15", "fine"];
 
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+// Numero dal link: ciò che non è un numero finito vale "altrimenti" (sicurezza, 16/11/2026: un testo al posto di un
+// numero finiva dentro il disegno senza essere ripulito). Ogni numero del disegno passa da qui.
+const num = (v, altrimenti = 0) => { const n = typeof v === "number" ? v : NaN; return Number.isFinite(n) ? n : altrimenti; };
+const elenco = v => Array.isArray(v) ? v : [];
 const vuoto = s => !s || !String(s).trim() || String(s).trim() === "-";
 const oggi = () => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); };
 const data = s => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || ""); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; };
@@ -197,11 +214,12 @@ function sino(id, domanda, valore, err) {
 function disegno(g) {
   const L = 1000, parti = [];
   for (let i = 50; i < L; i += 50) parti.push(`<line x1="${i}" y1="0" x2="${i}" y2="${L}" stroke="var(--griglia)" stroke-width="2"/><line x1="0" y1="${i}" x2="${L}" y2="${i}" stroke="var(--griglia)" stroke-width="2"/>`);
-  for (const r of g.r || []) { const pt = []; for (let i = 0; i + 1 < r.length; i += 2) pt.push(`${r[i] * L},${r[i + 1] * L}`);
+  for (const r of elenco(g.r)) { const pt = [], rr = elenco(r); for (let i = 0; i + 1 < rr.length; i += 2) pt.push(`${num(rr[i]) * L},${num(rr[i + 1]) * L}`);
     parti.push(`<polyline points="${pt.join(" ")}" fill="none" stroke="var(--testo)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>`); }
-  for (const [testo, x, y, gradi, scala] of g.t || [])
-    parti.push(`<text x="0" y="0" transform="translate(${x * L} ${y * L}) rotate(${gradi || 0})" font-size="${50 * (scala || 1)}" text-anchor="middle" dominant-baseline="middle" fill="var(--testo2)" font-family="var(--carattere)">${esc(testo)}</text>`);
-  for (const [icona, lettera, x, y, gradi, scala] of g.e || []) {
+  for (const t of elenco(g.t)) { const [testo] = elenco(t), [x, y, gradi] = elenco(t).slice(1, 4).map(n => num(n)), scala = num(elenco(t)[4], 1);
+    parti.push(`<text x="0" y="0" transform="translate(${x * L} ${y * L}) rotate(${gradi || 0})" font-size="${50 * (scala || 1)}" text-anchor="middle" dominant-baseline="middle" fill="var(--testo2)" font-family="var(--carattere)">${esc(testo)}</text>`); }
+  for (const el of elenco(g.e)) {
+    const [icona, lettera] = elenco(el), [x, y, gradi] = elenco(el).slice(2, 5).map(n => num(n)), scala = num(elenco(el)[5], 1);
     const lung = (LUNGHEZZA[icona] || .17) * L * (scala || 1), colore = lettera === "A" ? "var(--mezzo-a)" : "var(--mezzo-b)";
     let forma;
     if (icona === "FRECCIA") forma = `<path d="M0 ${-lung / 2} L${lung * .2} ${-lung * .18} L${lung * .07} ${-lung * .18} L${lung * .07} ${lung / 2} L${-lung * .07} ${lung / 2} L${-lung * .07} ${-lung * .18} L${-lung * .2} ${-lung * .18} Z" fill="var(--testo)"/>`;
@@ -215,7 +233,8 @@ function disegno(g) {
 }
 
 function circostanze(v) {
-  const c = (v.c || []).slice().sort((a, b) => a - b);
+  // Solo i numeri delle 17 circostanze del modulo (sicurezza, 16/11/2026: un testo qui entrava nella pagina com'era).
+  const c = elenco(v.c).filter(n => Number.isInteger(n) && n >= 1 && n <= CIRCOSTANZE.length).sort((a, b) => a - b);
   if (!c.length) return `<p>Nessuna casella barrata.</p>`;
   return `<ol class="circ">${c.map(n => { let t = CIRCOSTANZE[n - 1];
     if (n === 1 && v.v1) t = VOCE1[v.v1] || t; if (n === 2 && v.v2) t = VOCE2[v.v2] || t;
@@ -227,7 +246,7 @@ function veicolo(lettera, v, conDati) {
   if (conDati && v.t) righe.push(["N. di targa", v.t]);
   if (v.f) righe.push(["Veicolo", FORME[v.f] || v.f]);
   righe.push(["Punto d'urto", PUNTI[v.u] || "non segnato"]);
-  righe.push(["Danni visibili", v.nd ? "Nessun danno visibile" : (v.n || []).map(p => PUNTI[p] || p).join(", ") || "non segnati"]);
+  righe.push(["Danni visibili", v.nd ? "Nessun danno visibile" : elenco(v.n).map(p => PUNTI[p] || p).join(", ") || "non segnati"]);
   return `<section class="riquadro"><h3>Veicolo ${lettera}</h3><dl>${righe.map(([a, b]) => `<div class="riga"><dt>${esc(a)}</dt><dd>${esc(b)}</dd></div>`).join("")}</dl>
     <h3>12. Circostanze dell'incidente</h3>${circostanze(v)}</section>`;
 }

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-mnVu0AhuO1C805SiZBLpuyYI767Ay87+TEYg69uFIm4='; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-jyaKK61wutgeLc9pp2eBGogwcwk3QTd7anp8AbVIj/4='; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
 <style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Modulo del veicolo B</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -84,15 +84,17 @@ const CIRCOSTANZE = ["in fermata / in sosta", "ripartiva dopo una sosta / apriva
   "procedeva nello stesso senso, ma in una fila diversa", "cambiava fila", "sorpassava", "girava a destra", "girava a sinistra", "retrocedeva",
   "invadeva la sede stradale riservata alla circolazione in senso inverso", "proveniva da destra",
   "non aveva osservato il segnale di precedenza o di semaforo rosso"];
-const VOCE1 = { FERMATA: "in fermata", SOSTA: "in sosta" }, VOCE2 = { RIPARTIVA: "ripartiva dopo una sosta", PORTIERA: "apriva una portiera" };
-const PUNTI = { ANT_SX: "anteriore sinistra", ANT_CENTRO: "anteriore centro", ANT_DX: "anteriore destra", LATO_SX: "lato sinistro", LATO_DX: "lato destro",
+// Tabelle senza prototipo: un link con "constructor" o "toString" non pesca funzioni di JavaScript (revisione indipendente 2, punto 10).
+const tabella = o => Object.assign(Object.create(null), o);
+const VOCE1 = tabella({ FERMATA: "in fermata", SOSTA: "in sosta" }), VOCE2 = tabella({ RIPARTIVA: "ripartiva dopo una sosta", PORTIERA: "apriva una portiera" });
+const PUNTI = tabella({ ANT_SX: "anteriore sinistra", ANT_CENTRO: "anteriore centro", ANT_DX: "anteriore destra", LATO_SX: "lato sinistro", LATO_DX: "lato destro",
   POST_SX: "posteriore sinistra", POST_CENTRO: "posteriore centro", POST_DX: "posteriore destra", FIANCATA_SX_ANT: "fiancata sinistra anteriore",
   FIANCATA_SX_CENTRO: "fiancata sinistra centrale", FIANCATA_SX_POST: "fiancata sinistra posteriore", FIANCATA_DX_ANT: "fiancata destra anteriore",
   FIANCATA_DX_CENTRO: "fiancata destra centrale", FIANCATA_DX_POST: "fiancata destra posteriore", TETTO: "tetto", ANTERIORE: "anteriore",
   POSTERIORE: "posteriore", LATO_SX_ANT: "lato sinistro anteriore", LATO_SX_CENTRO: "lato sinistro centrale", LATO_SX_POST: "lato sinistro posteriore",
-  LATO_DX_ANT: "lato destro anteriore", LATO_DX_CENTRO: "lato destro centrale", LATO_DX_POST: "lato destro posteriore" };
-const FORME = { AUTO: "auto", FURGONE: "furgone", MOTO: "moto", MONOPATTINO: "monopattino" };
-const LUNGHEZZA = { AUTO: .17, FURGONE: .21, MOTO: .13, MONOPATTINO: .12, FRECCIA: .14 };
+  LATO_DX_ANT: "lato destro anteriore", LATO_DX_CENTRO: "lato destro centrale", LATO_DX_POST: "lato destro posteriore" });
+const FORME = tabella({ AUTO: "auto", FURGONE: "furgone", MOTO: "moto", MONOPATTINO: "monopattino" });
+const LUNGHEZZA = tabella({ AUTO: .17, FURGONE: .21, MOTO: .13, MONOPATTINO: .12, FRECCIA: .14 });
 const ALFABETO = "abcdefghijklmnopqrstuvwxyz234567";
 const ITALIA = "Italia";
 const S = { DITTA: "Ditta o società", SENZA_CF: "Senza codice fiscale (straniero)", SENZA_CIVICO: "Senza numero civico",
@@ -132,9 +134,23 @@ async function leggiQr(h) {
   const tutto = new Uint8Array(n); let i = 0; for (const p of pezzi) { tutto.set(p, i); i += p.length; }
   const q = JSON.parse(new TextDecoder().decode(tutto));
   if (!q || typeof q !== "object" || Array.isArray(q)) throw new Error("forma");
-  for (const k of ["A", "B", "g"]) if (q[k] != null && (typeof q[k] !== "object" || Array.isArray(q[k]))) throw new Error("forma");
-  for (const k of ["d", "l", "id"]) if (q[k] != null && typeof q[k] !== "string") throw new Error("forma");
-  return q;
+  return pulita(q);
+}
+// I dati del link si rifanno da capo con soli campi del tipo giusto: un testo dove serve un testo, un numero dove serve
+// un numero, il resto vuoto (revisione indipendente del 16/11/2026: un oggetto al posto di un testo o una lista annidata
+// migliaia di volte lasciavano la pagina bianca). Da qui in poi la pagina non vede altro.
+const testo = v => typeof v === "string" ? v : "";
+const oggetto = v => v && typeof v === "object" && !Array.isArray(v) ? v : {};
+function pulita(q) {
+  const veicolo = x => { const v = oggetto(x);
+    return { m: testo(v.m), t: testo(v.t), f: testo(v.f), u: testo(v.u), n: elenco(v.n).filter(p => typeof p === "string"),
+      nd: v.nd === 1 || v.nd === true ? 1 : 0, c: elenco(v.c).filter(n => Number.isInteger(n)), v1: testo(v.v1), v2: testo(v.v2) }; };
+  const g = oggetto(q.g);
+  return { v: num(q.v, 1), id: testo(q.id), d: testo(q.d), l: testo(q.l), A: veicolo(q.A), B: veicolo(q.B),
+    g: { s: testo(g.s),
+      e: elenco(g.e).filter(Array.isArray).map(e => [testo(e[0]), testo(e[1]), num(e[2]), num(e[3]), num(e[4]), num(e[5], 1)]),
+      t: elenco(g.t).filter(Array.isArray).map(t => [testo(t[0]), num(t[1]), num(t[2]), num(t[3]), num(t[4], 1)]),
+      r: elenco(g.r).filter(Array.isArray).map(r => r.map(x => num(x))) } };
 }
 async function codiceDi(obj) {
   return base32(await attraverso(new TextEncoder().encode(JSON.stringify(obj)), new CompressionStream("deflate")));

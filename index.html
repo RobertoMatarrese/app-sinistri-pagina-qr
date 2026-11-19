@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-jyaKK61wutgeLc9pp2eBGogwcwk3QTd7anp8AbVIj/4='; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-8ywz87gAhPnsLy9RJ/Fu3LWb/dMA3zB0WlyB3aaTXUE='; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
 <style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Modulo del veicolo B</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -146,7 +146,10 @@ function pulita(q) {
     return { m: testo(v.m), t: testo(v.t), f: testo(v.f), u: testo(v.u), n: elenco(v.n).filter(p => typeof p === "string"),
       nd: v.nd === 1 || v.nd === true ? 1 : 0, c: elenco(v.c).filter(n => Number.isInteger(n)), v1: testo(v.v1), v2: testo(v.v2) }; };
   const g = oggetto(q.g);
+  // Modo "firma" (pezzo 3 di firma-completa): m = "f", k = lettera dell'altro conducente, h = impronta del fascicolo (64 cifre esadecimali).
+  const firma = testo(q.m) === "f" && /^[0-9a-f]{64}$/.test(testo(q.h));
   return { v: num(q.v, 1), id: testo(q.id), d: testo(q.d), l: testo(q.l), A: veicolo(q.A), B: veicolo(q.B),
+    m: firma ? "f" : "", k: /^[B-Z]$/.test(testo(q.k)) ? q.k : "B", h: firma ? q.h : "",
     g: { s: testo(g.s),
       e: elenco(g.e).filter(Array.isArray).map(e => [testo(e[0]), testo(e[1]), num(e[2]), num(e[3]), num(e[4]), num(e[5], 1)]),
       t: elenco(g.t).filter(Array.isArray).map(t => [testo(t[0]), num(t[1]), num(t[2]), num(t[3]), num(t[4], 1)]),
@@ -158,6 +161,20 @@ async function codiceDi(obj) {
 
 // Stato della pagina
 let dinamica = null, esempio = false, schermata = "dinamica", errori = false;
+// Modo "firma": nome scritto da B e testo di approvazione pronto da mandare ad A.
+let nomeApprova = "", senzaNome = false, approvazione = null;
+const RIGA_APPROVAZIONE = "APPROVAZIONE-CAI v1";
+// Nome e cognome come li legge l'app: senza caratteri di controllo o di direzione, spazi ridotti, al massimo 80 caratteri.
+const nomePulito = s => String(s || "").replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁦-⁩]/g, "").replace(/\s+/g, " ").trim().slice(0, 80);
+function oraDiB() {
+  const n = new Date(), z = x => String(x).padStart(2, "0");
+  return n.getFullYear() + "-" + z(n.getMonth() + 1) + "-" + z(n.getDate()) + "T" + z(n.getHours()) + ":" + z(n.getMinutes());
+}
+// Righe "chiave: valore", la prima è la riga fissa: l'app (Approvazione.kt) controlla riga fissa, impronta e lettera.
+function testoApprovazione(q, nome) {
+  return [RIGA_APPROVAZIONE, "Conducente: " + q.k, "Fascicolo: " + q.h, "Nome: " + nome, "Data: " + oraDiB(),
+    "Approvo il modulo CAI di questo incidente. Non è una firma con valore legale."].join("\n");
+}
 const d = {
   accordo: null,
   c6: { cognome: "", nome: "", cfPiva: "", comune: "", provincia: "", via: "", civico: "", cap: "", stato: ITALIA, telefono: "", email: "" },
@@ -274,7 +291,31 @@ function vista() {
   const avviso = m.size ? `<p class="avviso">Compila i campi in rosso, oppure spunta la casella sotto il campo.</p>` : "";
   const tastiAvanti = (testo = "Avanti") => `<div class="tasti"><button type="button" class="chiaro" id="indietro">Indietro</button><button type="button" class="pieno" id="avanti">${testo}</button></div>`;
   let h = "";
-  if (schermata === "dinamica") {
+  if (schermata === "firma") {
+    // Pezzo 3 di firma-completa: B legge com'è andata, scrive nome e cognome e approva; il testo lo manda lui ad A.
+    const [g, ora] = (q.d || "").split("T");
+    const cond = q.k || "B";
+    h = testa("Veicolo " + cond, "Com'è andata, secondo il telefono di A") +
+      `<p>Leggi e guarda il disegno. Se sei d'accordo, scrivi il tuo nome e cognome e tocca «Approvo».</p>
+      <section class="riquadro"><dl>
+        <div class="riga"><dt>1. Data incidente</dt><dd>${esc(giorno(g))}${ora ? ", ore " + esc(ora) : ""}</dd></div>
+        <div class="riga"><dt>2. Luogo</dt><dd>${esc(q.l || "non scritto")}</dd></div></dl></section>` +
+      veicolo("A", q.A || {}, true) + veicolo(cond, q.B || {}, false) +
+      `<section class="riquadro"><h3>13. Grafico dell'incidente al momento dell'urto</h3>${disegno(q.g || {})}</section>
+      <section class="riquadro"><h2>Approvi?</h2>
+        <div class="campo"><label for="nomeApprova">Nome e cognome</label><input id="nomeApprova" type="text" autocomplete="name" maxlength="80" value="${esc(nomeApprova)}"></div>
+        ${senzaNome ? `<p class="msg">Scrivi il tuo nome e cognome.</p>` : ""}
+        <div class="tasti"><button type="button" class="pieno" id="approvo">Approvo</button></div>
+        <p class="guida">Se non sei d'accordo, non approvare: ognuno manda la sua denuncia. L'approvazione è un testo scritto da te: non ha valore di firma.</p></section>` +
+      (approvazione ? `<section class="riquadro"><h3>Messaggio per A</h3>
+        <p class="codice" id="testoApprovazione">${esc(approvazione).split("\n").join("<br>")}</p>
+        <div class="tasti">${typeof navigator.share === "function" ? `<button type="button" class="pieno" id="invia">Invia ad A</button>` : ""}
+        <button type="button" class="chiaro" id="copiaApprovazione">Copia il testo</button></div>
+        <p class="guida" id="copiatoA" hidden>Testo copiato.</p>
+        <p class="guida">Mandalo ad A con l'app che preferisci (WhatsApp, SMS, email): lo incolla nella sua app.</p></section>` : "") +
+      `<section class="riquadro"><h3>Hai la carta d'identità elettronica?</h3>
+        <p class="guida">Puoi anche firmare con la carta. Chiedi ad A di mandarti il modulo, poi: 1. installa l'app CieSign. 2. Aprila e registra la tua carta (serve il PIN di 8 cifre). 3. Firma il modulo (PDF senza Firma Grafica) e rimandalo ad A.</p></section>`;
+  } else if (schermata === "dinamica") {
     const [g, ora] = (q.d || "").split("T");
     h = testa("Veicolo B", "Com'è andata, secondo il telefono di A") +
       (esempio ? `<p class="esempio">Esempio: questa pagina si è aperta senza il QR. Inquadra il QR sul telefono di A per vedere il vostro incidente.</p>` : "") +
@@ -436,6 +477,24 @@ function collega() {
     errori = false;
     if (history.state && history.state.i === ORDINE.indexOf(schermata)) history.back(); else vai(ORDINE[ORDINE.indexOf(schermata) - 1]);
   });
+  // Modo "firma": il nome si ricorda mentre si scrive; "Approvo" prepara il testo, "Invia ad A" apre la condivisione del telefono di B.
+  const na = $("nomeApprova");
+  if (na) na.addEventListener("input", () => { nomeApprova = na.value; });
+  const ap = $("approvo");
+  if (ap) ap.addEventListener("click", () => {
+    const nome = nomePulito(nomeApprova);
+    if (!nome) { senzaNome = true; approvazione = null; vista(); return; }
+    senzaNome = false; nomeApprova = nome; approvazione = testoApprovazione(dinamica, nome); vista();
+    const r = $("testoApprovazione"); if (r) r.scrollIntoView({ block: "center" });
+  });
+  const inv = $("invia");
+  if (inv) inv.addEventListener("click", () => { try { navigator.share({ text: approvazione }).catch(() => {}); } catch (e) { /* si copia il testo */ } });
+  const cpa = $("copiaApprovazione");
+  if (cpa) cpa.addEventListener("click", () => {
+    const fatto = () => { $("copiatoA").hidden = false; };
+    try { navigator.clipboard.writeText(approvazione).then(fatto, () => { getSelection().selectAllChildren($("testoApprovazione")); }); }
+    catch (e) { getSelection().selectAllChildren($("testoApprovazione")); }
+  });
   const cp = $("copia");
   if (cp) cp.addEventListener("click", () => {
     const t = $("codice").textContent;
@@ -460,6 +519,9 @@ async function avvio() {
   const h = location.hash.replace(/^#/, "");
   try { if (h) dinamica = await leggiQr(h); } catch (e) { dinamica = null; }
   if (!dinamica) { dinamica = ESEMPIO; esempio = true; }
+  schermata = dinamica.m === "f" ? "firma" : "dinamica"; // QR della schermata "Fai firmare": si approva, non si compila
+  approvazione = null; senzaNome = false;
+  document.getElementById("fascia").textContent = dinamica.m === "f" ? "Questa pagina non manda niente da sola: il messaggio lo mandi tu." : "Prova: niente viene mandato.";
   vista();
 }
 window.addEventListener("hashchange", () => { schermata = "dinamica"; avvio(); });

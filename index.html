@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-8ywz87gAhPnsLy9RJ/Fu3LWb/dMA3zB0WlyB3aaTXUE='; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-BLXrIoQ+ZhaUN+V0KrJ1WQmwt0BdiZAoAAfb8nV22DE='; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
 <style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Modulo del veicolo B</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -150,6 +150,8 @@ function pulita(q) {
   const firma = testo(q.m) === "f" && /^[0-9a-f]{64}$/.test(testo(q.h));
   return { v: num(q.v, 1), id: testo(q.id), d: testo(q.d), l: testo(q.l), A: veicolo(q.A), B: veicolo(q.B),
     m: firma ? "f" : "", k: /^[B-Z]$/.test(testo(q.k)) ? q.k : "B", h: firma ? q.h : "",
+    // Nomi delle caselle 9 di A e dell'altro conducente (solo nel modo firma), da mettere accanto alle lettere.
+    na: firma ? nomePulito(testo(q.na)) : "", nb: firma ? nomePulito(testo(q.nb)) : "",
     g: { s: testo(g.s),
       e: elenco(g.e).filter(Array.isArray).map(e => [testo(e[0]), testo(e[1]), num(e[2]), num(e[3]), num(e[4]), num(e[5], 1)]),
       t: elenco(g.t).filter(Array.isArray).map(t => [testo(t[0]), num(t[1]), num(t[2]), num(t[3]), num(t[4], 1)]),
@@ -280,7 +282,7 @@ function veicolo(lettera, v, conDati) {
   if (v.f) righe.push(["Veicolo", FORME[v.f] || v.f]);
   righe.push(["Punto d'urto", PUNTI[v.u] || "non segnato"]);
   righe.push(["Danni visibili", v.nd ? "Nessun danno visibile" : elenco(v.n).map(p => PUNTI[p] || p).join(", ") || "non segnati"]);
-  return `<section class="riquadro"><h3>Veicolo ${lettera}</h3><dl>${righe.map(([a, b]) => `<div class="riga"><dt>${esc(a)}</dt><dd>${esc(b)}</dd></div>`).join("")}</dl>
+  return `<section class="riquadro"><h3>Veicolo ${esc(lettera)}</h3><dl>${righe.map(([a, b]) => `<div class="riga"><dt>${esc(a)}</dt><dd>${esc(b)}</dd></div>`).join("")}</dl>
     <h3>12. Circostanze dell'incidente</h3>${circostanze(v)}</section>`;
 }
 
@@ -295,24 +297,25 @@ function vista() {
     // Pezzo 3 di firma-completa: B legge com'è andata, scrive nome e cognome e approva; il testo lo manda lui ad A.
     const [g, ora] = (q.d || "").split("T");
     const cond = q.k || "B";
-    h = testa("Veicolo " + cond, "Com'è andata, secondo il telefono di A") +
+    const chiA = q.na ? "A (" + q.na + ")" : "A", chiB = q.nb ? cond + " (" + q.nb + ")" : cond; // lettera con il nome accanto, se c'è
+    h = testa("Veicolo " + chiB, "Com'è andata, secondo il telefono di A") +
       `<p>Leggi e guarda il disegno. Se sei d'accordo, scrivi il tuo nome e cognome e tocca «Approvo».</p>
       <section class="riquadro"><dl>
         <div class="riga"><dt>1. Data incidente</dt><dd>${esc(giorno(g))}${ora ? ", ore " + esc(ora) : ""}</dd></div>
         <div class="riga"><dt>2. Luogo</dt><dd>${esc(q.l || "non scritto")}</dd></div></dl></section>` +
-      veicolo("A", q.A || {}, true) + veicolo(cond, q.B || {}, false) +
+      veicolo(chiA, q.A || {}, true) + veicolo(chiB, q.B || {}, false) +
       `<section class="riquadro"><h3>13. Grafico dell'incidente al momento dell'urto</h3>${disegno(q.g || {})}</section>
       <section class="riquadro"><h2>Approvi?</h2>
         <div class="campo"><label for="nomeApprova">Nome e cognome</label><input id="nomeApprova" type="text" autocomplete="name" maxlength="80" value="${esc(nomeApprova)}"></div>
         ${senzaNome ? `<p class="msg">Scrivi il tuo nome e cognome.</p>` : ""}
         <div class="tasti"><button type="button" class="pieno" id="approvo">Approvo</button></div>
         <p class="guida">Se non sei d'accordo, non approvare: ognuno manda la sua denuncia. L'approvazione è un testo scritto da te: non ha valore di firma.</p></section>` +
-      (approvazione ? `<section class="riquadro"><h3>Messaggio per A</h3>
+      (approvazione ? `<section class="riquadro"><h3>Messaggio per ${esc(chiA)}</h3>
         <p class="codice" id="testoApprovazione">${esc(approvazione).split("\n").join("<br>")}</p>
         <div class="tasti">${typeof navigator.share === "function" ? `<button type="button" class="pieno" id="invia">Invia ad A</button>` : ""}
         <button type="button" class="chiaro" id="copiaApprovazione">Copia il testo</button></div>
         <p class="guida" id="copiatoA" hidden>Testo copiato.</p>
-        <p class="guida">Mandalo ad A con l'app che preferisci (WhatsApp, SMS, email): lo incolla nella sua app.</p></section>` : "") +
+        <p class="guida">Mandalo ad ${esc(chiA)} con l'app che preferisci (WhatsApp, SMS, email): lo incolla nella sua app.</p></section>` : "") +
       `<section class="riquadro"><h3>Hai la carta d'identità elettronica?</h3>
         <p class="guida">Puoi anche firmare con la carta. Chiedi ad A di mandarti il modulo, poi: 1. installa l'app CieSign. 2. Aprila e registra la tua carta (serve il PIN di 8 cifre). 3. Firma il modulo (PDF senza Firma Grafica) e rimandalo ad A.</p></section>`;
   } else if (schermata === "dinamica") {
